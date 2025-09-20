@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Soundzy Viewer</title> <!-- change to whatever you want the tab to show -->
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    html, body {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #000;
+    }
+
+    /* Fullscreen iframe */
+    iframe {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+    iframe:focus { outline: none; }
+
+    /* Watermark in the bottom-right corner */
+    .watermark {
+      position: fixed;
+      right: 12px;
+      bottom: 12px;
+      background: rgba(0,0,0,0.75);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      font-size: 13px;
+      z-index: 99999;
+      /* 
+         pointer-events: auto -> watermark will block clicks in that area
+         pointer-events: none -> clicks will pass through to the framed site
+      */
+      pointer-events: auto;
+      user-select: none;
+    }
+
+    /* Fallback message if framing is blocked */
+    .blocked {
+      position: fixed;
+      inset: 0;
+      background: #0b0b0b;
+      color: #fff;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+      z-index: 100000;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    }
+    .blocked h2 { margin: 0 0 8px; font-size: 20px; }
+    .blocked p { margin: 0; opacity: 0.9; }
+  </style>
+</head>
+<body>
+  <!--
+    Sandbox flags:
+      - allow-scripts, allow-forms, allow-same-origin => keeps the site functional inside the iframe
+      - DO NOT include allow-top-navigation or allow-popups => prevents top-level redirects and new windows/tabs
+  -->
+  <iframe
+    id="theFrame"
+    src="https://readdy.link/preview/a6a18026-5d91-4238-9243-4c532e99e26e/2595272"
+    title="Embedded content"
+    loading="eager"
+    sandbox="allow-scripts allow-forms allow-same-origin"
+    referrerpolicy="no-referrer"
+  ></iframe>
+
+  <div class="watermark">Soundzy Global</div>
+
+  <div id="fallback" class="blocked" role="alert" aria-live="polite">
+    <div>
+      <h2>Unable to display content inside this page</h2>
+      <p>
+        The target site is preventing embedding (X-Frame-Options or Content-Security-Policy).<br/>
+        To open it directly, click the button below.
+      </p>
+      <p style="margin-top:12px;">
+        <button id="openDirect" style="padding:8px 12px;border-radius:6px;border:0;background:#fff;color:#111;cursor:pointer;">
+          Open directly
+        </button>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    // Show fallback if iframe doesn't load within X seconds or fires an error.
+    (function() {
+      const iframe = document.getElementById('theFrame');
+      const fallback = document.getElementById('fallback');
+      let loaded = false;
+
+      function showFallback() {
+        // If iframe never loaded successfully, show the fallback UI.
+        if (!loaded) {
+          fallback.style.display = 'flex';
+        }
+      }
+
+      // If the frame fires the load event, we consider it successful.
+      iframe.addEventListener('load', function() {
+        loaded = true;
+        // small delay to allow visual paint — keep fallback hidden
+        setTimeout(() => { fallback.style.display = 'none'; }, 200);
+      });
+
+      // If the frame doesn't load within 4 seconds, show fallback (many frame-blocks are immediate)
+      setTimeout(showFallback, 4000);
+
+      // Open direct button (only shown in fallback)
+      document.getElementById('openDirect').addEventListener('click', function() {
+        window.open(iframe.src, '_blank', 'noopener');
+      });
+
+      // Prevent the framed content from attempting to navigate the top-level window.
+      // Note: sandbox WITHOUT allow-top-navigation already blocks that.
+      // This listener is just defensive - can't access cross-origin iframe content.
+      window.addEventListener('message', function(evt) {
+        // Ignore messages from iframe; do not allow them to change top location.
+        // (Left intentionally empty to avoid acting on messages.)
+      }, false);
+    })();
+  </script>
+</body>
+</html>
